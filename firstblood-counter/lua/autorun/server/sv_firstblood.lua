@@ -13,13 +13,35 @@ end
 sqlMakeFBDatabase()
 
 local function updateFirstBloodStat(steamid, stat, increment)
-    if not steamid then return end
-    local current = tonumber(sql.QueryValue("SELECT " .. stat .. " FROM first_blood WHERE SID = '" .. steamid .. "'")) or 0
-    if current == 0 and not sql.QueryValue("SELECT SID FROM first_blood WHERE SID = '" .. steamid .. "'") then
-        local num, deaths = (stat == "Num" and increment or 0), (stat == "Deaths" and increment or 0)
-        sql.Query(string.format("INSERT INTO first_blood (SID, Num, Deaths) VALUES ('%s', %d, %d)", steamid, num, deaths))
+    if not steamid then
+        return
+    end
+    local current = tonumber(
+        sql.QueryValue("SELECT " .. stat .. " FROM first_blood WHERE SID = '" .. steamid .. "'")
+    ) or 0
+    if
+        current == 0
+        and not sql.QueryValue("SELECT SID FROM first_blood WHERE SID = '" .. steamid .. "'")
+    then
+        local num, deaths =
+            (stat == "Num" and increment or 0), (stat == "Deaths" and increment or 0)
+        sql.Query(
+            string.format(
+                "INSERT INTO first_blood (SID, Num, Deaths) VALUES ('%s', %d, %d)",
+                steamid,
+                num,
+                deaths
+            )
+        )
     else
-        sql.Query(string.format("UPDATE first_blood SET %s = %d WHERE SID = '%s'", stat, current + increment, steamid))
+        sql.Query(
+            string.format(
+                "UPDATE first_blood SET %s = %d WHERE SID = '%s'",
+                stat,
+                current + increment,
+                steamid
+            )
+        )
     end
 end
 
@@ -77,7 +99,9 @@ hook.Add("TTTBeginRound", "firstBloodReset", function()
 end)
 
 hook.Add("PlayerDeath", "firstBloodDeath", function(victim, _, attacker)
-    if attacker == victim then return end
+    if attacker == victim then
+        return
+    end
     if firstBlood.Victim == "" then
         firstBlood = { Victim = victim, Attacker = attacker }
         sqlInsertFirstBlood(victim, attacker)
