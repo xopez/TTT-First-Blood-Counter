@@ -96,129 +96,25 @@ if SERVER then
     end)
 
     hook.Add("TTTBeginRound", "firstBloodReset", function()
-        firstBlood = { Victim = "", Attacker = "" }
-    end)
-
-    hook.Add("PlayerDeath", "firstBloodDeath", function(victim, _, attacker)
-        if attacker == victim then
-            return
-        end
-        if firstBlood.Victim == "" then
-            firstBlood = { Victim = victim, Attacker = attacker }
-            sqlInsertFirstBlood(victim, attacker)
-        end
-    end)
-else
+if CLIENT then
     surface.CreateFont("Stats", { font = "Bebas Neue", size = 40, weight = 500, antialias = true })
     surface.CreateFont(
         "Category",
         { font = "Bebas Neue", size = 26, weight = 500, antialias = true }
     )
     surface.CreateFont("List", { font = "Tuffy", size = 14, weight = 500, antialias = true })
-
     local FB = {}
-    local DPanel, PlayerList
-
-    local COLORS = {
-        bgDark = Color(44, 62, 80),
-        bgMid = Color(54, 73, 93),
-        border = Color(54, 73, 103),
-        scrollBar = Color(75, 75, 75),
-        btnRed = Color(152, 0, 0),
-        white = Color(255, 255, 255),
-    }
-
-    local function TextSize(font, msg)
+    function TextSize(font, msg)
         surface.SetFont(font)
         return surface.GetTextSize(msg)
     end
-
-    local function wrapString(str, maxLen)
-        return (#str > maxLen) and (str:sub(1, maxLen) .. "...") or str
+    function wrapString(str, width)
+        return (string.len(str) > width) and (string.sub(str, 1, width) .. "...") or str
     end
-
-    local function requestPlayerNameAsync(sid, callback)
-        local sid64 = util.SteamIDTo64(sid)
-        if not sid64 then
-            callback("Unknown")
-            return
-        end
-        steamworks.RequestPlayerInfo(sid64, function()
-            local name = steamworks.GetPlayerName(sid64)
-            if name == "" then
-                name = "Bot"
-            end
-            if callback then
-                callback(name)
-            end
-        end)
-    end
-
-    local function updatePlayerList(value4)
-        if not IsValid(PlayerList) then
-            return
-        end
-        PlayerList:Clear()
-
-        local _, nameHeight = TextSize("List", "Name")
-        local dataList = {}
-        if FB and #FB == 0 then
-            for _, v in pairs(FB) do
-                table.insert(dataList, v)
-            end
-        else
-            dataList = FB or {}
-        end
-        for _, v in ipairs(dataList) do
-            local playerPanel = vgui.Create("DPanel")
-            playerPanel:SetTall(25)
-
-            local displayName = "Loading..."
-            requestPlayerNameAsync(v.SID, function(newName)
-                newName = wrapString(newName or "Unknown", 30)
-                displayName = newName
-                if IsValid(playerPanel) then
-                    playerPanel:InvalidateLayout(true)
-                end
-            end)
-
-            playerPanel.Paint = function(s, w, h)
-                draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(COLORS.bgMid, value4))
-                draw.DrawText(
-                    displayName,
-                    "List",
-                    (460 / 5) + 6,
-                    (h / 2 - nameHeight / 2) - 1,
-                    ColorAlpha(COLORS.white, value4),
-                    TEXT_ALIGN_CENTER
-                )
-                draw.DrawText(
-                    v.Num or 0,
-                    "List",
-                    (460 / 10 * 3.7) + 68,
-                    (h / 2 - nameHeight / 2) - 1,
-                    ColorAlpha(COLORS.white, value4),
-                    TEXT_ALIGN_CENTER
-                )
-                draw.DrawText(
-                    v.Deaths or 0,
-                    "List",
-                    (460 / 10 * 7) + 68,
-                    (h / 2 - nameHeight / 2) - 1,
-                    ColorAlpha(COLORS.white, value4),
-                    TEXT_ALIGN_CENTER
-                )
-            end
-
-            PlayerList:AddItem(playerPanel)
-        end
-    end
-
-    local function FirstBlood()
+    function FirstBlood()
         local value, value2, value3, value4 = 0, 0, 0, 0
         local speed, speed2 = 8, 1
-
-        DPanel = vgui.Create("DFrame")
+        local DPanel = vgui.Create("DFrame")
         DPanel:SetPos(ScrW() / 2 - 250, ScrH() / 2 - 350)
         DPanel:SetSize(500, 700)
         DPanel:SetTitle("")
@@ -226,73 +122,264 @@ else
         DPanel:ShowCloseButton(true)
         DPanel:MakePopup()
         DPanel:SetFocusTopLevel(true)
-
-        local headerText = {
-            { "First Blood Counter", "Stats", 250, 28 },
-            { "Name", "Category", (480 / 5) + 20, 81 },
-            { "First Bloods", "Category", (460 / 10 * 3.7) + 80, 81 },
-            { "First Deaths", "Category", (460 / 10 * 7) + 80, 81 },
-        }
-
-        local boxLayout = {
-            { 0, 0, 500, 700, COLORS.bgDark },
-            { 4, 4, 492, 50, COLORS.bgMid },
-            { 0, 0, 500, 2, COLORS.border },
-            { 0, 698, 500, 2, COLORS.border },
-            { 0, 0, 2, 700, COLORS.border },
-            { 498, 0, 2, 700, COLORS.border },
-            { 8, 62, 484, 38, COLORS.bgMid },
-            { 8, 100, 2, 591, COLORS.bgMid },
-            { 490, 100, 2, 591, COLORS.bgMid },
-            { 8, 689, 484, 2, COLORS.bgMid },
-        }
-
-        function DPanel:Paint(w, h)
+        DPanel.Paint = function()
             value = Lerp(speed * FrameTime(), value, 255)
             value2 = Lerp(speed * FrameTime(), value2, 200)
             value3 = Lerp(speed * FrameTime(), value3, 150)
             value4 = Lerp(speed2 * FrameTime(), value4, 255)
-
-            for _, b in ipairs(boxLayout) do
-                draw.RoundedBox(0, b[1], b[2], b[3], b[4], ColorAlpha(b[5], value))
-            end
-            for _, t in ipairs(headerText) do
-                draw.SimpleText(
-                    t[1],
-                    t[2],
-                    t[3],
-                    t[4],
-                    ColorAlpha(COLORS.white, value),
+            local colors = {
+                bg = Color(44, 62, 80, value),
+                header = Color(54, 73, 93, value),
+                border = Color(54, 73, 103, value),
+            }
+            draw.RoundedBox(0, 0, 0, 500, 700, colors.bg)
+            draw.RoundedBox(0, 4, 4, 492, 50, colors.header)
+            draw.RoundedBox(0, 0, 0, 500, 2, colors.border)
+            draw.RoundedBox(0, 0, 698, 500, 2, colors.border)
+            draw.RoundedBox(0, 0, 0, 2, 700, colors.border)
+            draw.RoundedBox(0, 498, 0, 2, 700, colors.border)
+            draw.RoundedBox(0, 8, 62, 484, 38, colors.header)
+            draw.RoundedBox(0, 8, 100, 2, 591, colors.header)
+            draw.RoundedBox(0, 490, 100, 2, 591, colors.header)
+            draw.RoundedBox(0, 8, 689, 484, 2, colors.header)
+            draw.SimpleText(
+                "First Blood Counter",
+                "Stats",
+                250,
+                28,
+                Color(255, 255, 255, value),
+                1,
+                1
+            )
+            draw.SimpleText("Name", "Category", 116, 81, Color(255, 255, 255, value), 1, 1)
+            draw.SimpleText("First Bloods", "Category", 250, 81, Color(255, 255, 255, value), 1, 1)
+            draw.SimpleText("First Deaths", "Category", 370, 81, Color(255, 255, 255, value), 1, 1)
+        end
+        local PlayerList = vgui.Create("DScrollPanel", DPanel)
+        PlayerList:SetPos(10, 104)
+        PlayerList:SetSize(477, 566)
+        PlayerList:SetPadding(0)
+        PlayerList.Paint = function() end
+        local dBar = PlayerList:GetVBar()
+        function dBar:Paint(w, h)
+            draw.RoundedBox(0, 0, 0, w, h, Color(75, 75, 75, value3))
+        end
+        function dBar.btnUp:Paint(w, h)
+            draw.RoundedBox(0, 0, 0, w, h, Color(152, 0, 0, value2))
+        end
+        function dBar.btnDown:Paint(w, h)
+            draw.RoundedBox(0, 0, 0, w, h, Color(152, 0, 0, value2))
+        end
+        function dBar.btnGrip:Paint(w, h)
+            draw.RoundedBox(0, 0, 0, w, h, Color(255, 255, 255, value))
+        end
+        for k, v in pairs(FB) do
+            local playerPanel = vgui.Create("DPanel")
+            playerPanel:SetPos(3, (26 * (k - 1)) + (k - 1))
+            playerPanel:SetSize(490, 25)
+            playerPanel.Paint = function()
+                local _, nameHeight = TextSize("List", "Name")
+                local sid64 = util.SteamIDTo64(v["SID"])
+                steamworks.RequestPlayerInfo(sid64)
+                draw.RoundedBox(0, 0, 0, 490, 25, Color(54, 73, 93, value4))
+                local pname = steamworks.GetPlayerName(sid64)
+                if pname == "" then
+                    pname = "Bot"
+                end
+                draw.DrawText(
+                    wrapString(pname, 30),
+                    "List",
+                    98,
+                    (25 / 2 - nameHeight / 2) - 1,
+                    Color(255, 255, 255, value4),
+                    TEXT_ALIGN_CENTER,
+                    TEXT_ALIGN_CENTER
+                )
+                draw.DrawText(
+                    v["Num"],
+                    "List",
+                    250,
+                    (25 / 2 - nameHeight / 2) - 1,
+                    Color(255, 255, 255, value4),
+                    TEXT_ALIGN_CENTER,
+                    TEXT_ALIGN_CENTER
+                )
+                draw.DrawText(
+                    v["Deaths"],
+                    "List",
+                    370,
+                    (25 / 2 - nameHeight / 2) - 1,
+                    Color(255, 255, 255, value4),
                     TEXT_ALIGN_CENTER,
                     TEXT_ALIGN_CENTER
                 )
             end
-        end
-
-        PlayerList = vgui.Create("DScrollPanel", DPanel)
-        PlayerList:SetPos(10, 104)
-        PlayerList:SetSize(477, 566)
-
-        local dBar = PlayerList:GetVBar()
-        dBar.Paint = function(w, h)
-            draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(COLORS.scrollBar, value3))
-        end
-        dBar.btnUp.Paint = function(w, h)
-            draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(COLORS.btnRed, value2))
-        end
-        dBar.btnDown.Paint = function(w, h)
-            draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(COLORS.btnRed, value2))
-        end
-        dBar.btnGrip.Paint = function(w, h)
-            draw.RoundedBox(0, 0, 0, w, h, ColorAlpha(COLORS.white, value))
+            PlayerList:AddItem(playerPanel)
         end
     end
-
-    net.Receive("ViewFB", function()
+    net.Receive("ViewFB", function(len, ply)
         FB = net.ReadTable()
-        if not IsValid(DPanel) then
-            FirstBlood()
+        FirstBlood()
+    end)
+end
+if SERVER then
+    local firstBlood = {}
+    util.AddNetworkString("ChatMessage")
+    util.AddNetworkString("ViewFB")
+    print("First Blood Counter loaded!")
+    function sqlMakeFBDatabase()
+        if not sql.TableExists("first_blood") then
+            local query = "CREATE TABLE first_blood ( SID string, Num int, Deaths int)"
+            result = sql.Query(query)
         end
-        updatePlayerList(255)
+    end
+    sqlMakeFBDatabase()
+    function sqlInsertFirstBlood(victim, attacker)
+        if sql.TableExists("first_blood") then
+            if
+                attacker
+                and attacker.IsValid
+                and attacker:IsValid()
+                and attacker.IsPlayer
+                and attacker:IsPlayer()
+            then
+                local getAttQuery = "SELECT * FROM first_blood WHERE SID = '"
+                    .. attacker:SteamID()
+                    .. "'"
+                getAttResult = sql.Query(getAttQuery)
+                if getAttResult == nil then
+                    local query = "INSERT INTO first_blood ('SID', 'Num', 'Deaths') VALUES ( '"
+                        .. attacker:SteamID()
+                        .. "', '"
+                        .. 1
+                        .. "', '"
+                        .. 0
+                        .. "')"
+                    result = sql.Query(query)
+                else
+                    local query = "UPDATE first_blood SET Num = '"
+                        .. getAttResult[1]["Num"] + 1
+                        .. "' WHERE SID = '"
+                        .. attacker:SteamID()
+                        .. "'"
+                    result = sql.Query(query)
+                end
+            end
+            if
+                victim
+                and victim.IsValid
+                and victim:IsValid()
+                and victim.IsPlayer
+                and victim:IsPlayer()
+            then
+                local getVicQuery = "SELECT * FROM first_blood WHERE SID = '"
+                    .. victim:SteamID()
+                    .. "'"
+                getVicResult = sql.Query(getVicQuery)
+                if getVicResult == nil then
+                    local query = "INSERT INTO first_blood ('SID', 'Num', 'Deaths') VALUES ( '"
+                        .. victim:SteamID()
+                        .. "', '"
+                        .. 0
+                        .. "', '"
+                        .. 1
+                        .. "')"
+                    result = sql.Query(query)
+                else
+                    local query = "UPDATE first_blood SET Deaths = '"
+                        .. getVicResult[1]["Deaths"] + 1
+                        .. "' WHERE SID = '"
+                        .. victim:SteamID()
+                        .. "'"
+                    result = sql.Query(query)
+                end
+                local getAllQuery = "SELECT * FROM first_blood"
+                getAllResult = sql.Query(getAllQuery)
+                if getAllResult == nil then
+                    return
+                else
+                    PrintTable(getAllResult)
+                end
+            end
+        end
+    end
+    function isGroup(ply)
+        return true
+    end
+    function sqlScrubFBDatabase()
+        if sql.TableExists("first_blood") then
+            local query = "DELETE FROM first_blood"
+            local result = sql.Query(query)
+        end
+    end
+    hook.Add("PlayerSay", "ScrubFBDatabase", function(ply, text)
+        local phrase = string.lower("!scrubFB")
+        local split = string.Explode(" ", text)
+        local cmd = string.lower(split[1])
+        if cmd == phrase and (ply:IsAdmin() or ply:IsSuperAdmin()) then
+            sqlScrubFBDatabase()
+            ply:PrintMessage(HUD_PRINTTALK, "FirstBlood: Databases deleted!\n")
+            return
+        end
+        if cmd == phrase and (not ply:IsAdmin() or not ply:IsSuperAdmin()) then
+            ply:PrintMessage(
+                HUD_PRINTTALK,
+                "FirstBlood: You are not allowed to reset the First Blood Counter!\n"
+            )
+        end
+    end)
+    hook.Add("PlayerSay", "printFB", function(ply, text)
+        local phrase = string.lower("!printFB")
+        local split = string.Explode(" ", text)
+        local cmd = string.lower(split[1])
+        if cmd == phrase and isGroup(ply) then
+            local getAllQuery = "SELECT * FROM first_blood"
+            getAllResult = sql.Query(getAllQuery)
+            if getAllResult == nil then
+                return
+            else
+                PrintTable(getAllResult)
+            end
+            return
+        end
+    end)
+    hook.Add("PlayerSay", "ViewFB", function(ply, text)
+        local split = string.Explode(" ", text)
+        local cmd = string.lower(split[1])
+        if (cmd == "!firstblood" or cmd == "!fb") and isGroup(ply) then
+            local getAllResult = sql.Query("SELECT * FROM first_blood ORDER BY Deaths DESC")
+            if getAllResult then
+                net.Start("ViewFB")
+                net.WriteTable(getAllResult)
+                net.Send(ply)
+            else
+                Msg("\nFirstBlood: Table is empty!\n")
+                ply:PrintMessage(HUD_PRINTTALK, "FirstBlood: No first blood's fallen!\n")
+            end
+        end
+    end)
+    hook.Add("TTTBeginRound", "firstBlood", function(ply)
+        firstBlood = { ["Victim"] = "", ["Attacker"] = "" }
+    end)
+    hook.Add("PlayerDeath", "firstBloodDeath", function(victim, inflictor, attacker)
+        if attacker == victim then
+            return
+        end
+        if firstBlood["Victim"] == "" then
+            firstBlood = { ["Victim"] = victim, ["Attacker"] = attacker }
+            sqlInsertFirstBlood(victim, attacker)
+        end
+    end)
+    hook.Add("TTTEndRound", "AnnounceFirstBlood", function(result)
+        if firstBlood and firstBlood["Victim"] ~= "" and firstBlood["Attacker"] ~= "" then
+            local attacker = firstBlood["Attacker"]
+            local victim = firstBlood["Victim"]
+            if IsValid(attacker) and attacker:IsPlayer() and IsValid(victim) and victim:IsPlayer() then
+                local msg = string.format("First Blood: %s killed %s first!", attacker:Nick(), victim:Nick())
+                for _, ply in ipairs(player.GetAll()) do
+                    ply:PrintMessage(HUD_PRINTTALK, msg)
+                end
+            end
+        end
     end)
 end
