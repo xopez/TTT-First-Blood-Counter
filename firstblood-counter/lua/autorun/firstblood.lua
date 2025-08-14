@@ -118,7 +118,6 @@ else
 
     local FB = {}
     local DPanel, PlayerList
-    local steamCache = {}
 
     local COLORS = {
         bgDark = Color(44, 62, 80),
@@ -139,25 +138,16 @@ else
     end
 
     local function requestPlayerNameAsync(sid, callback)
-        if steamCache[sid] then
-            callback(steamCache[sid])
-            return
-        end
-
         local sid64 = util.SteamIDTo64(sid)
         if not sid64 then
-            steamCache[sid] = "Unknown"
             callback("Unknown")
             return
         end
-
-        steamCache[sid] = "Loading..."
         steamworks.RequestPlayerInfo(sid64, function()
             local name = steamworks.GetPlayerName(sid64)
             if name == "" then
                 name = "Bot"
             end
-            steamCache[sid] = name
             if callback then
                 callback(name)
             end
@@ -171,18 +161,24 @@ else
         PlayerList:Clear()
 
         local _, nameHeight = TextSize("List", "Name")
-        for _, v in ipairs(FB) do
+        local dataList = {}
+        if FB and #FB == 0 then
+            for _, v in pairs(FB) do
+                table.insert(dataList, v)
+            end
+        else
+            dataList = FB or {}
+        end
+        for _, v in ipairs(dataList) do
             local playerPanel = vgui.Create("DPanel")
             playerPanel:SetTall(25)
 
-            local displayName = steamCache[v.SID] or "Loading..."
+            local displayName = "Loading..."
             requestPlayerNameAsync(v.SID, function(newName)
-                newName = wrapString(newName, 30)
-                if newName ~= displayName then
-                    displayName = newName
-                    if IsValid(playerPanel) then
-                        playerPanel:InvalidateLayout(true)
-                    end
+                newName = wrapString(newName or "Unknown", 30)
+                displayName = newName
+                if IsValid(playerPanel) then
+                    playerPanel:InvalidateLayout(true)
                 end
             end)
 
@@ -197,7 +193,7 @@ else
                     TEXT_ALIGN_CENTER
                 )
                 draw.DrawText(
-                    v.Num,
+                    v.Num or 0,
                     "List",
                     (460 / 10 * 3.7) + 68,
                     (h / 2 - nameHeight / 2) - 1,
@@ -205,7 +201,7 @@ else
                     TEXT_ALIGN_CENTER
                 )
                 draw.DrawText(
-                    v.Deaths,
+                    v.Deaths or 0,
                     "List",
                     (460 / 10 * 7) + 68,
                     (h / 2 - nameHeight / 2) - 1,
