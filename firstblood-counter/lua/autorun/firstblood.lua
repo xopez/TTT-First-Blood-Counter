@@ -1,5 +1,4 @@
 if SERVER then
-    -- lua/autorun/server/firstblood.lua
     AddCSLuaFile()
 
     local firstBlood = {}
@@ -110,7 +109,6 @@ if SERVER then
         end
     end)
 else
-    -- lua/autorun/client/firstblood.lua
     surface.CreateFont("Stats", { font = "Bebas Neue", size = 40, weight = 500, antialias = true })
     surface.CreateFont(
         "Category",
