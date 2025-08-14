@@ -276,8 +276,38 @@ if SERVER then
         if firstBlood and firstBlood["Victim"] ~= "" and firstBlood["Attacker"] ~= "" then
             local attacker = firstBlood["Attacker"]
             local victim = firstBlood["Victim"]
-            if IsValid(attacker) and attacker:IsPlayer() and IsValid(victim) and victim:IsPlayer() then
-                local msg = string.format("First Blood: %s killed %s first! Type !fb to see all stats.", attacker:Nick(), victim:Nick())
+            if
+                IsValid(attacker)
+                and attacker:IsPlayer()
+                and IsValid(victim)
+                and victim:IsPlayer()
+            then
+                local attSteamID = attacker:SteamID()
+                local vicSteamID = victim:SteamID()
+                if attSteamID == "" then
+                    attSteamID = "Bot"
+                end
+                if vicSteamID == "" then
+                    vicSteamID = "Bot"
+                end
+                local attCount, vicDeaths = 0, 0
+                local attResult =
+                    sql.Query("SELECT Num FROM first_blood WHERE SID = '" .. attSteamID .. "'")
+                if attResult and attResult[1] and attResult[1]["Num"] then
+                    attCount = tonumber(attResult[1]["Num"]) or 0
+                end
+                local vicResult =
+                    sql.Query("SELECT Deaths FROM first_blood WHERE SID = '" .. vicSteamID .. "'")
+                if vicResult and vicResult[1] and vicResult[1]["Deaths"] then
+                    vicDeaths = tonumber(vicResult[1]["Deaths"]) or 0
+                end
+                local msg = string.format(
+                    "First Blood: %s killed %s first! (Attacker: %d First Bloods, Victim: %d First Deaths) Type !fb to see all stats.",
+                    attacker:Nick(),
+                    victim:Nick(),
+                    attCount,
+                    vicDeaths
+                )
                 for _, ply in ipairs(player.GetAll()) do
                     ply:PrintMessage(HUD_PRINTTALK, msg)
                 end
