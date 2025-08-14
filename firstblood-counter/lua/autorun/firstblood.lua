@@ -277,7 +277,7 @@ if SERVER then
             local attacker = firstBlood["Attacker"]
             local victim = firstBlood["Victim"]
             if IsValid(attacker) and attacker:IsPlayer() and IsValid(victim) and victim:IsPlayer() then
-                local msg = string.format("First Blood: %s killed %s first!", attacker:Nick(), victim:Nick())
+                local msg = string.format("First Blood: %s killed %s first! Type !fb to see all stats.", attacker:Nick(), victim:Nick())
                 for _, ply in ipairs(player.GetAll()) do
                     ply:PrintMessage(HUD_PRINTTALK, msg)
                 end
