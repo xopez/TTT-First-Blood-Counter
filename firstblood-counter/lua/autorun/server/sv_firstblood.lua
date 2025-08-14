@@ -79,7 +79,7 @@ hook.Add("PlayerSay", "FirstBloodCommands", function(ply, text)
             PrintTable(sql.Query("SELECT * FROM first_blood") or {})
         end
         return ""
-    elseif cmd == "!firstblood" then
+    elseif cmd == "!firstblood" or cmd == "!fb" then
         if isGroup(ply) then
             local getAllResult = sql.Query("SELECT * FROM first_blood ORDER BY Deaths DESC") or {}
             if #getAllResult > 0 then
