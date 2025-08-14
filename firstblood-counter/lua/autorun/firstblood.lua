@@ -302,10 +302,12 @@ if SERVER then
                     vicDeaths = tonumber(vicResult[1]["Deaths"]) or 0
                 end
                 local msg = string.format(
-                    "First Blood: %s killed %s first! (Attacker: %d First Bloods, Victim: %d First Deaths) Type !fb to see all stats.",
+                    "First Blood: %s killed %s as the first kill of the round! %s now has %d First Blood(s), %s has %d First Death(s). Type !fb to see all stats.",
                     attacker:Nick(),
                     victim:Nick(),
+                    attacker:Nick(),
                     attCount,
+                    victim:Nick(),
                     vicDeaths
                 )
                 for _, ply in ipairs(player.GetAll()) do
