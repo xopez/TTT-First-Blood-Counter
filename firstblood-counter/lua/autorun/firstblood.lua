@@ -123,8 +123,7 @@ if CLIENT then
         FB = net.ReadTable()
         FirstBlood()
     end)
-end
-if SERVER then
+else
     local firstBlood = {}
     util.AddNetworkString("ChatMessage")
     util.AddNetworkString("ViewFB")
