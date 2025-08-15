@@ -272,65 +272,56 @@ else
         end
     end)
     hook.Add("TTTEndRound", "AnnounceFirstBlood", function(result)
-        if firstBlood and firstBlood["Victim"] ~= "" and firstBlood["Attacker"] ~= "" then
-            local attacker = firstBlood["Attacker"]
-            local victim = firstBlood["Victim"]
-            if
+        if not (firstBlood and firstBlood["Victim"] ~= "" and firstBlood["Attacker"] ~= "") then
+            return
+        end
+        local attacker = firstBlood["Attacker"]
+        local victim = firstBlood["Victim"]
+        if
+            not (
                 IsValid(attacker)
                 and attacker:IsPlayer()
                 and IsValid(victim)
                 and victim:IsPlayer()
-            then
-                local attSteamID = attacker:SteamID()
-                local vicSteamID = victim:SteamID()
-                if attSteamID == "" then
-                    attSteamID = "Bot"
-                end
-                if vicSteamID == "" then
-                    vicSteamID = "Bot"
-                end
-                local attCount, attDeaths, vicCount, vicDeaths = 0, 0, 0, 0
-                local attResult = sql.Query(
-                    "SELECT Num, Deaths FROM first_blood WHERE SID = '" .. attSteamID .. "'"
-                )
-                if attResult and attResult[1] then
-                    attCount = tonumber(attResult[1]["Num"]) or 0
-                    attDeaths = tonumber(attResult[1]["Deaths"]) or 0
-                end
-                local vicResult = sql.Query(
-                    "SELECT Num, Deaths FROM first_blood WHERE SID = '" .. vicSteamID .. "'"
-                )
-                if vicResult and vicResult[1] then
-                    vicCount = tonumber(vicResult[1]["Num"]) or 0
-                    vicDeaths = tonumber(vicResult[1]["Deaths"]) or 0
-                end
-                -- Line 1: First Blood
-                for _, ply in ipairs(player.GetAll()) do
-                    ply:PrintMessage(
-                        HUD_PRINTTALK,
-                        string.format(
-                            "First Blood! %s killed %s first!",
-                            attacker:Nick(),
-                            victim:Nick()
-                        )
-                    )
-                    -- Line 2: Stats
-                    ply:PrintMessage(
-                        HUD_PRINTTALK,
-                        string.format(
-                            "%s: %d First Bloods / %d First Deaths   |   %s: %d First Bloods / %d First Deaths",
-                            attacker:Nick(),
-                            attCount,
-                            attDeaths,
-                            victim:Nick(),
-                            vicCount,
-                            vicDeaths
-                        )
-                    )
-                    -- Line 3: Hint
-                    ply:PrintMessage(HUD_PRINTTALK, "Type !fb to see all stats.")
-                end
+            )
+        then
+            return
+        end
+
+        local function getStats(steamid)
+            if steamid == "" then
+                steamid = "Bot"
             end
+            local res =
+                sql.Query("SELECT Num, Deaths FROM first_blood WHERE SID = '" .. steamid .. "'")
+            local num, deaths = 0, 0
+            if res and res[1] then
+                num = tonumber(res[1]["Num"]) or 0
+                deaths = tonumber(res[1]["Deaths"]) or 0
+            end
+            return num, deaths
+        end
+
+        local attCount, attDeaths = getStats(attacker:SteamID())
+        local vicCount, vicDeaths = getStats(victim:SteamID())
+
+        local line1 =
+            string.format("First Blood! %s killed %s first!", attacker:Nick(), victim:Nick())
+        local line2 = string.format(
+            "%s: %d First Bloods / %d First Deaths   |   %s: %d First Bloods / %d First Deaths",
+            attacker:Nick(),
+            attCount,
+            attDeaths,
+            victim:Nick(),
+            vicCount,
+            vicDeaths
+        )
+        local line3 = "Type !fb to see all stats."
+
+        for _, ply in ipairs(player.GetAll()) do
+            ply:PrintMessage(HUD_PRINTTALK, line1)
+            ply:PrintMessage(HUD_PRINTTALK, line2)
+            ply:PrintMessage(HUD_PRINTTALK, line3)
         end
     end)
 end
