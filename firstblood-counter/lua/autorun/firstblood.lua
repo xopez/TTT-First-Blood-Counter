@@ -304,17 +304,12 @@ else
                     vicCount = tonumber(vicResult[1]["Num"]) or 0
                     vicDeaths = tonumber(vicResult[1]["Deaths"]) or 0
                 end
-                -- Emojis and colors
-                local emojiFB = "💥"
-                local emojiAtt = "🏅"
-                local emojiVic = "☠️"
                 -- Line 1: First Blood
                 for _, ply in ipairs(player.GetAll()) do
                     ply:PrintMessage(
                         HUD_PRINTTALK,
                         string.format(
-                            "%s First Blood! %s killed %s first!",
-                            emojiFB,
+                            "First Blood! %s killed %s first!",
                             attacker:Nick(),
                             victim:Nick()
                         )
@@ -323,12 +318,10 @@ else
                     ply:PrintMessage(
                         HUD_PRINTTALK,
                         string.format(
-                            "%s %s: %d FB / %d FD   |   %s %s: %d FB / %d FD",
-                            emojiAtt,
+                            "%s: %d First Bloods / %d First Deaths   |   %s: %d First Bloods / %d First Deaths",
                             attacker:Nick(),
                             attCount,
                             attDeaths,
-                            emojiVic,
                             victim:Nick(),
                             vicCount,
                             vicDeaths
