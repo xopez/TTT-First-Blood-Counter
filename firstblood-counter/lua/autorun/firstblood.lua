@@ -289,28 +289,53 @@ else
                 if vicSteamID == "" then
                     vicSteamID = "Bot"
                 end
-                local attCount, vicDeaths = 0, 0
-                local attResult =
-                    sql.Query("SELECT Num FROM first_blood WHERE SID = '" .. attSteamID .. "'")
-                if attResult and attResult[1] and attResult[1]["Num"] then
+                local attCount, attDeaths, vicCount, vicDeaths = 0, 0, 0, 0
+                local attResult = sql.Query(
+                    "SELECT Num, Deaths FROM first_blood WHERE SID = '" .. attSteamID .. "'"
+                )
+                if attResult and attResult[1] then
                     attCount = tonumber(attResult[1]["Num"]) or 0
+                    attDeaths = tonumber(attResult[1]["Deaths"]) or 0
                 end
-                local vicResult =
-                    sql.Query("SELECT Deaths FROM first_blood WHERE SID = '" .. vicSteamID .. "'")
-                if vicResult and vicResult[1] and vicResult[1]["Deaths"] then
+                local vicResult = sql.Query(
+                    "SELECT Num, Deaths FROM first_blood WHERE SID = '" .. vicSteamID .. "'"
+                )
+                if vicResult and vicResult[1] then
+                    vicCount = tonumber(vicResult[1]["Num"]) or 0
                     vicDeaths = tonumber(vicResult[1]["Deaths"]) or 0
                 end
-                local msg = string.format(
-                    "First Blood: %s killed %s as the first kill of the round! %s now has %d First Blood(s), %s has %d First Death(s). Type !fb to see all stats.",
-                    attacker:Nick(),
-                    victim:Nick(),
-                    attacker:Nick(),
-                    attCount,
-                    victim:Nick(),
-                    vicDeaths
-                )
+                -- Emojis and colors
+                local emojiFB = "💥"
+                local emojiAtt = "🏅"
+                local emojiVic = "☠️"
+                -- Line 1: First Blood
                 for _, ply in ipairs(player.GetAll()) do
-                    ply:PrintMessage(HUD_PRINTTALK, msg)
+                    ply:PrintMessage(
+                        HUD_PRINTTALK,
+                        string.format(
+                            "%s First Blood! %s killed %s first!",
+                            emojiFB,
+                            attacker:Nick(),
+                            victim:Nick()
+                        )
+                    )
+                    -- Line 2: Stats
+                    ply:PrintMessage(
+                        HUD_PRINTTALK,
+                        string.format(
+                            "%s %s: %d FB / %d FD   |   %s %s: %d FB / %d FD",
+                            emojiAtt,
+                            attacker:Nick(),
+                            attCount,
+                            attDeaths,
+                            emojiVic,
+                            victim:Nick(),
+                            vicCount,
+                            vicDeaths
+                        )
+                    )
+                    -- Line 3: Hint
+                    ply:PrintMessage(HUD_PRINTTALK, "Type !fb to see all stats.")
                 end
             end
         end
